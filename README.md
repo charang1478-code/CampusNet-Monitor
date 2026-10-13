@@ -249,7 +249,42 @@ python -m pytest tests/test_all.py -v
 
 ---
 
-## 9. Academic Limitations & Future Work
+## 9. Render Cloud Deployment Guide
 
-- **Simulation Scope:** All network parameters operate within a discrete-event time-stepped simulation model. It runs without requiring administrative rights on Windows.
+The repository includes a ready-to-use `render.yaml` blueprint configuration and is designed to run on Render's free tier as a unified Python Web Service that automatically builds the React SPA and serves it from Flask.
+
+### Method A: Blueprint 1-Click Deployment (Recommended)
+1. Go to [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** and select **Blueprint**.
+3. Connect your GitHub repository: `charang1478-code/CampusNet-Monitor`.
+4. Render will read `render.yaml` automatically and configure the build and start commands.
+5. Click **Apply**. Render will install Node dependencies, compile the React bundle into `frontend/dist`, install Python dependencies (including Gunicorn), and launch your live URL!
+
+### Method B: Manual Web Service Setup
+1. In the Render Dashboard, click **New +** > **Web Service**.
+2. Connect `charang1478-code/CampusNet-Monitor`.
+3. Fill in the following fields:
+   - **Name:** `campusnet-monitor`
+   - **Language:** `Python 3`
+   - **Branch:** `main`
+   - **Region:** Any (e.g. *Oregon (US West)* or *Frankfurt (EU)*)
+   - **Build Command:**
+     ```bash
+     npm --prefix frontend install && npm --prefix frontend run build && pip install -r requirements.txt
+     ```
+   - **Start Command:**
+     ```bash
+     gunicorn backend.app:app --workers 1 --threads 4 --bind 0.0.0.0:$PORT
+     ```
+   - **Plan:** Free
+4. Click **Deploy Web Service**.
+
+Once deployed, Render provides a public HTTPS URL (e.g. `https://campusnet-monitor.onrender.com`) accessible from any laptop or mobile device.
+
+---
+
+## 10. Academic Limitations & Future Work
+
+- **Simulation Scope:** All network parameters operate within a discrete-event time-stepped simulation model. It runs without requiring administrative rights on Windows or cloud infrastructure.
 - **Physical Integration:** Mininet and Linux kernel traffic control (`tc qdisc`) can be integrated in future phases by swapping the simulation engine interface for real Linux socket telemetry.
+
