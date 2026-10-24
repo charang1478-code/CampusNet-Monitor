@@ -3,6 +3,9 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import OverviewDashboard from './pages/OverviewDashboard';
 import NetworkTopology from './pages/NetworkTopology';
+import BlockAnalytics from './pages/BlockAnalytics';
+import DeviceAccessControl from './pages/DeviceAccessControl';
+import CampusScenarios from './pages/CampusScenarios';
 import LiveMonitoring from './pages/LiveMonitoring';
 import CongestionAlerts from './pages/CongestionAlerts';
 import TrafficControl from './pages/TrafficControl';
@@ -57,6 +60,8 @@ export default function App() {
   };
 
   const alertCount = (dashboardData?.recent_alerts || []).filter(a => !a.acknowledged).length;
+  const breachedBlocksCount = dashboardData?.breached_blocks_count || 0;
+  const pendingDevicesCount = dashboardData?.device_counts?.pending_approval || dashboardData?.device_counts?.pending || 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans">
@@ -75,6 +80,8 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           alertCount={alertCount}
+          breachedBlocksCount={breachedBlocksCount}
+          pendingDevicesCount={pendingDevicesCount}
         />
 
         {/* Content Pane */}
@@ -111,6 +118,26 @@ export default function App() {
               <NetworkTopology
                 topologyData={topologyData}
                 onRefreshTopology={fetchState}
+              />
+            )}
+
+            {activeTab === 'blocks' && (
+              <BlockAnalytics
+                dashboardData={dashboardData}
+                onRefresh={fetchState}
+              />
+            )}
+
+            {activeTab === 'devices' && (
+              <DeviceAccessControl
+                onRefreshDashboard={fetchState}
+              />
+            )}
+
+            {activeTab === 'scenarios' && (
+              <CampusScenarios
+                dashboardData={dashboardData}
+                onRefresh={fetchState}
               />
             )}
 

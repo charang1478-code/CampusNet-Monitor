@@ -5,6 +5,7 @@ import {
   Router,
   Wifi,
   Laptop,
+  Database,
   Plus,
   Trash2,
   RotateCcw,
@@ -21,7 +22,7 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
   const [selectedNode, setSelectedNode] = useState(null);
   const [editCapacity, setEditCapacity] = useState('');
   const [newHostLabel, setNewHostLabel] = useState('');
-  const [newHostSwitch, setNewHostSwitch] = useState('SW_CSE');
+  const [newHostSwitch, setNewHostSwitch] = useState('SW_BLOCK_C');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
 
@@ -116,6 +117,7 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
       case 'router': return Router;
       case 'switch': return Server;
       case 'access_point': return Wifi;
+      case 'server': return Database;
       default: return Laptop;
     }
   };
@@ -253,6 +255,7 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
                 const isRouter = node.type === 'router';
                 const isSwitch = node.type === 'switch';
                 const isAP = node.type === 'access_point';
+                const isServer = node.type === 'server';
 
                 let fillBg = '#1e293b';
                 let strokeColor = '#475569';
@@ -265,6 +268,9 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
                 } else if (isAP) {
                   fillBg = '#064e3b';
                   strokeColor = '#10b981';
+                } else if (isServer) {
+                  fillBg = '#3b0764';
+                  strokeColor = '#c084fc';
                 }
 
                 return (
@@ -299,7 +305,7 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
                       fontSize={11}
                       fontWeight="bold"
                     >
-                      {node.type === 'host' ? 'PC' : (isRouter ? 'RT' : (isAP ? 'AP' : 'SW'))}
+                      {node.type === 'host' ? 'PC' : (node.type === 'server' ? 'SRV' : (isRouter ? 'RT' : (isAP ? 'AP' : 'SW')))}
                     </text>
 
                     {/* Label below node */}
@@ -467,11 +473,13 @@ export default function NetworkTopology({ topologyData, onRefreshTopology }) {
                   onChange={(e) => setNewHostSwitch(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="SW_CSE">CSE Dept Switch (VLAN 10)</option>
-                  <option value="SW_ECE">ECE Dept Switch (VLAN 20)</option>
-                  <option value="SW_ADMIN">Admin Dept Switch (VLAN 30)</option>
-                  <option value="SW_LIB">Library Switch (VLAN 40)</option>
-                  <option value="AP_WIFI">Student Wi-Fi Gateway (VLAN 50)</option>
+                  {nodes
+                    .filter((n) => n.layer === 'distribution' || n.type === 'switch' || n.type === 'access_point')
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.id})
+                      </option>
+                    ))}
                 </select>
               </div>
 

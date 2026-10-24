@@ -1,8 +1,12 @@
 """
-Campus Network Traffic Simulator Engine
-Time-stepped discrete simulation of traffic flows across campus topology.
-Models queues, link capacities, propagation delays, packet drops, protocol distributions,
-and connects with Leaky Bucket, Token Bucket, and QoS priority schedulers.
+Campus Network Traffic Simulator Engine - VNR VJIET Block-Aware Model
+Time-stepped discrete simulation of traffic flows across campus blocks and departments:
+- Core Layer (Core Router, 10G Backbone)
+- Blocks A, B, C, D, E, PG, and Campus Wi-Fi Mesh
+- Bandwidth quota enforcement per block and department
+- Integrated Network Access Control (DeviceManager for guest permissions)
+- Event scenarios: Tech Fest, Online Exams, Induction Program, Normal Academic
+- Connects with Leaky Bucket, Token Bucket, and QoS priority schedulers.
 """
 
 import time
@@ -13,52 +17,54 @@ from backend.engine.topology import CampusTopology
 from backend.engine.traffic_controller import LeakyBucket, TokenBucket
 from backend.engine.qos_scheduler import QoSScheduler
 from backend.engine.congestion_detector import CongestionDetector
+from backend.engine.device_manager import DeviceManager
+from backend.engine.campus_scenarios import CAMPUS_EVENT_SCENARIOS
 from backend.models import database
 
 
 class TrafficSimulator:
     """
     Core simulator running stepped intervals (e.g. 1-second ticks).
-    Thread-safe start, pause, resume, stop, and step controls.
+    Manages VNR VJIET block aggregation, guest device NAC, and algorithms.
     """
 
     PROFILES = {
         "normal_browsing": {
-            "name": "Normal Campus Browsing",
-            "description": "Standard academic hours: light web browsing, email, OPAC lookups, moderate WiFi.",
-            "base_load_mbps": 45.0,
-            "variance": 0.15,
+            "name": "Normal Academic Operation",
+            "description": "Standard classroom theory, lab sessions, OPAC queries, moderate hostel Wi-Fi.",
+            "base_load_mbps": 75.0,
+            "variance": 0.12,
             "protocol_dist": {"TCP": 0.65, "UDP": 0.25, "ICMP": 0.05, "OTHER": 0.05},
             "hotspot_link": None
         },
         "video_conferencing": {
-            "name": "Live Online Lecture / Video-Conferencing",
-            "description": "Virtual classrooms and conference calls across CSE and ECE departments.",
-            "base_load_mbps": 110.0,
-            "variance": 0.20,
+            "name": "Live Online Lecture / Webinars",
+            "description": "Departmental webinars in CSE/ECE (B & C Blocks) and high-definition auditorium streaming.",
+            "base_load_mbps": 130.0,
+            "variance": 0.18,
             "protocol_dist": {"TCP": 0.30, "UDP": 0.65, "ICMP": 0.02, "OTHER": 0.03},
-            "hotspot_link": "L_CORE_CSE"
+            "hotspot_link": "L_CORE_BLKC"
         },
         "large_file_transfers": {
-            "name": "Large Dataset & ISO Transfers",
-            "description": "AI model downloads, lab OS image backups, heavy library digital repository sync.",
-            "base_load_mbps": 160.0,
+            "name": "Large Datasets & Lab Backups",
+            "description": "M.Tech AI datasets in PG Block, CAD/CAM ISOs in D-Block, library digital archives in C-Block.",
+            "base_load_mbps": 180.0,
             "variance": 0.10,
             "protocol_dist": {"TCP": 0.88, "UDP": 0.08, "ICMP": 0.01, "OTHER": 0.03},
-            "hotspot_link": "L_CORE_CSE"
+            "hotspot_link": "L_CORE_BLKC"
         },
         "burst_traffic": {
-            "name": "Sudden Registration Flash Crowd (Burst)",
-            "description": "Sudden surge during semester course registration causing buffer overflow and high latency.",
-            "base_load_mbps": 220.0,
-            "variance": 0.35,
+            "name": "Autonomous Exam & Registration Rush",
+            "description": "Sudden traffic surge on A-Block (Exam Branch server) and C-Block exam portal.",
+            "base_load_mbps": 240.0,
+            "variance": 0.30,
             "protocol_dist": {"TCP": 0.75, "UDP": 0.20, "ICMP": 0.02, "OTHER": 0.03},
-            "hotspot_link": "L_CORE_ADM"
+            "hotspot_link": "L_CORE_BLKA"
         },
         "custom": {
-            "name": "Custom Configured Scenario",
-            "description": "User-defined offered load, target links, and protocol distribution.",
-            "base_load_mbps": 80.0,
+            "name": "Custom Configured Workload",
+            "description": "User-defined offered load across blocks and target departmental links.",
+            "base_load_mbps": 100.0,
             "variance": 0.10,
             "protocol_dist": {"TCP": 0.70, "UDP": 0.20, "ICMP": 0.05, "OTHER": 0.05},
             "hotspot_link": None
@@ -71,18 +77,22 @@ class TrafficSimulator:
 
         self.topology = CampusTopology()
         self.detector = CongestionDetector()
+        self.device_manager = DeviceManager()
+
+        # Campus Event Scenario: 'normal_academic', 'tech_fest', 'online_exams', 'induction_program'
+        self.active_scenario = "normal_academic"
 
         # Traffic control setup
         self.active_control = "none"  # 'none', 'leaky_bucket', 'token_bucket', 'qos_priority'
-        self.leaky_bucket = LeakyBucket(capacity_mb=15.0, output_rate_mbps=35.0)
-        self.token_bucket = TokenBucket(token_rate_mbps=40.0, bucket_capacity_tokens=50.0, mode="shaping")
-        self.qos_scheduler = QoSScheduler(mode="priority", total_buffer_mb=20.0, link_capacity_mbps=45.0)
+        self.leaky_bucket = LeakyBucket(capacity_mb=20.0, output_rate_mbps=45.0)
+        self.token_bucket = TokenBucket(token_rate_mbps=50.0, bucket_capacity_tokens=60.0, mode="shaping")
+        self.qos_scheduler = QoSScheduler(mode="priority", total_buffer_mb=25.0, link_capacity_mbps=60.0)
 
         # Simulation state
         self.status = "stopped"  # 'running', 'paused', 'stopped'
         self.step_number = 0
         self.selected_profile = "normal_browsing"
-        self.custom_load_mbps = 80.0
+        self.custom_load_mbps = 100.0
         self.boosted_link_id = None
         self.boost_multiplier = 1.0
 
@@ -101,21 +111,57 @@ class TrafficSimulator:
         self.random_seed = seed
         self.rng = random.Random(seed)
 
+    def set_campus_scenario(self, scenario_id):
+        """Activates a predefined campus event mode (Tech Fest, Online Exams, Induction)."""
+        with self.lock:
+            if scenario_id in CAMPUS_EVENT_SCENARIOS:
+                self.active_scenario = scenario_id
+                meta = CAMPUS_EVENT_SCENARIOS[scenario_id]
+                # Adjust simulator offered load based on event
+                self.custom_load_mbps = meta["base_offered_mbps"]
+                if scenario_id == "tech_fest":
+                    self.selected_profile = "burst_traffic"
+                    # Spawn pending guest devices seeking connection for Tech Fest
+                    self.device_manager.request_access({
+                        "device_name": f"Hackathon Team ({self.step_number})",
+                        "device_type": "External Laptop",
+                        "owner": "Fest Participant",
+                        "target_block": "BLOCK_C",
+                        "notes": "Tech Fest Convergence hackathon participant"
+                    })
+                elif scenario_id == "online_exams":
+                    self.selected_profile = "burst_traffic"
+                    # In online exams, automatically quarantine non-whitelisted wireless endpoints in exam blocks
+                    for d in self.device_manager.devices:
+                        if not d.get("is_college_asset") and d.get("target_block") in ("BLOCK_A", "BLOCK_C"):
+                            d["status"] = "quarantined"
+                            d["notes"] = "Exam Lockdown: Wireless isolation active in A and C blocks"
+                elif scenario_id == "induction_program":
+                    self.selected_profile = "video_conferencing"
+                    self.device_manager.request_access({
+                        "device_name": f"Parent BYOD Device ({self.step_number})",
+                        "device_type": "Guest Smartphone",
+                        "owner": "First Year Parent",
+                        "target_block": "BLOCK_E",
+                        "notes": "Induction Program attendee at K.S. Auditorium"
+                    })
+                else:
+                    self.selected_profile = "normal_browsing"
+                return True, f"Activated campus scenario: {meta['name']}"
+            return False, f"Unknown scenario: {scenario_id}"
+
     def set_profile(self, profile_name, custom_load=None, boosted_link=None, boost_mult=1.0):
         """Selects traffic profile and optional link boost."""
         with self.lock:
             if profile_name in self.PROFILES:
                 self.selected_profile = profile_name
             if custom_load is not None:
-                self.custom_load_mbps = max(5.0, min(500.0, float(custom_load)))
+                self.custom_load_mbps = max(5.0, min(800.0, float(custom_load)))
             self.boosted_link_id = boosted_link
             self.boost_multiplier = max(1.0, float(boost_mult))
 
     def set_traffic_control(self, algorithm, config=None):
-        """
-        Enables or updates traffic control algorithm:
-        'none', 'leaky_bucket', 'token_bucket', 'qos_priority'
-        """
+        """Enables or updates traffic control algorithm."""
         with self.lock:
             self.active_control = algorithm
             if config:
@@ -188,6 +234,7 @@ class TrafficSimulator:
             self.token_bucket.reset()
             self.qos_scheduler.reset()
             self.history_snapshots.clear()
+            self.active_scenario = "normal_academic"
             self.rng = random.Random(self.random_seed)
 
     def _run_loop(self):
@@ -201,61 +248,89 @@ class TrafficSimulator:
             time.sleep(1.0)
 
     def step(self):
-        """Executes a single discrete simulation step."""
+        """Executes a single discrete simulation step across VNR blocks."""
         with self.lock:
             self.step_number += 1
             prof = self.PROFILES.get(self.selected_profile, self.PROFILES["normal_browsing"])
+            scenario_meta = CAMPUS_EVENT_SCENARIOS.get(self.active_scenario, CAMPUS_EVENT_SCENARIOS["normal_academic"])
 
             # Base offered load calculation
             if self.selected_profile == "custom":
                 target_load = self.custom_load_mbps
             else:
-                target_load = prof["base_load_mbps"]
+                target_load = scenario_meta.get("base_offered_mbps", prof["base_load_mbps"])
 
-            # Variance perturbation
             var = prof.get("variance", 0.15)
             jitter = (self.rng.random() * 2 - 1) * var
-            total_offered = max(2.0, target_load * (1.0 + jitter))
+            total_offered = max(5.0, target_load * (1.0 + jitter))
 
-            # Distribute load across links in the topology
-            # Key bottlenecks to watch: Core-CSE, Core-ECE, Core-Admin, Core-WiFi
+            # Base block weights modified by active scenario multipliers
+            multipliers = scenario_meta.get("block_weight_multipliers", {})
+
+            block_base_weights = {
+                "BLOCK_A": 0.15 * multipliers.get("BLOCK_A", 1.0),
+                "BLOCK_B": 0.16 * multipliers.get("BLOCK_B", 1.0),
+                "BLOCK_C": 0.28 * multipliers.get("BLOCK_C", 1.0),
+                "BLOCK_D": 0.12 * multipliers.get("BLOCK_D", 1.0),
+                "BLOCK_E": 0.14 * multipliers.get("BLOCK_E", 1.0),
+                "BLOCK_PG": 0.08 * multipliers.get("BLOCK_PG", 1.0),
+                "WIFI_MESH": 0.12 * multipliers.get("WIFI_MESH", 1.0)
+            }
+            # Normalize block weights
+            w_sum = sum(block_base_weights.values())
+            norm_block_weights = {k: v / w_sum for k, v in block_base_weights.items()}
+
+            # Link-level distribution mapping
+            link_block_map = {
+                "L_CORE_BLKA": "BLOCK_A",
+                "L_CORE_BLKB": "BLOCK_B",
+                "L_CORE_BLKC": "BLOCK_C",
+                "L_CORE_BLKD": "BLOCK_D",
+                "L_CORE_BLKE": "BLOCK_E",
+                "L_CORE_BLKPG": "BLOCK_PG",
+                "L_CORE_WIFI": "WIFI_MESH"
+            }
+
             total_cap = sum(link["capacity_mbps"] for link in self.topology.links)
             congested_count = 0
             total_transmitted = 0.0
             total_dropped = 0.0
             total_latency = 0.0
 
-            # Weight distribution per department link
-            link_weights = {
-                "L_CORE_BB": 0.40,
-                "L_CORE_CSE": 0.22,
-                "L_CORE_ECE": 0.14,
-                "L_CORE_ADM": 0.10,
-                "L_CORE_LIB": 0.06,
-                "L_CORE_WIFI": 0.08
-            }
+            # Guest device throttling factor: calculate total active guest load
+            guest_devices = self.device_manager.list_devices(status="guest_allowed")
+            allowed_guest_quota = sum(d.get("bandwidth_cap_mbps", 10.0) for d in guest_devices)
 
             for link in self.topology.links:
                 lid = link["id"]
                 cap = link["capacity_mbps"]
                 prop_delay = link["propagation_delay_ms"]
                 max_queue = link["max_queue_packets"]
+                blk_id = link.get("block_id")
 
-                # Base link offered traffic
-                weight = link_weights.get(lid, 0.02)
-                link_offered = total_offered * weight
+                # Offered load allocation
+                if lid == "L_CORE_BB":
+                    link_offered = total_offered * 0.90
+                elif lid in link_block_map:
+                    # Trunk distribution link to block
+                    target_blk = link_block_map[lid]
+                    link_offered = total_offered * norm_block_weights.get(target_blk, 0.1)
+                else:
+                    # Access link inside block
+                    parent_blk = blk_id or "BLOCK_C"
+                    link_offered = (total_offered * norm_block_weights.get(parent_blk, 0.1)) * 0.45
 
-                # Profile specific hotspot adjustments
+                # Hotspot adjustments
                 if prof.get("hotspot_link") == lid:
-                    link_offered *= 1.8
+                    link_offered *= 1.7
 
                 # User boosted link
                 if self.boosted_link_id == lid:
                     link_offered *= self.boost_multiplier
 
-                # Apply traffic control if this link is a distribution bottleneck (or core link)
+                # Apply traffic control algorithms if active on major trunk links
                 control_applied = False
-                if self.active_control != "none" and lid in ("L_CORE_CSE", "L_CORE_ADM", "L_CORE_WIFI", "L_CORE_BB"):
+                if self.active_control != "none" and (lid.startswith("L_CORE_BLK") or lid in ("L_CORE_BB", "L_CORE_WIFI")):
                     control_applied = True
                     if self.active_control == "leaky_bucket":
                         res = self.leaky_bucket.process_step(link_offered, time_step_sec=1.0)
@@ -274,11 +349,10 @@ class TrafficSimulator:
                         queue_delay = res["queue_delay_ms"]
 
                     elif self.active_control == "qos_priority":
-                        # Split offered traffic into high (25%), med (45%), low (30%)
                         qos_input = {
-                            "high": link_offered * 0.25,
+                            "high": link_offered * 0.30,
                             "medium": link_offered * 0.45,
-                            "low": link_offered * 0.30
+                            "low": link_offered * 0.25
                         }
                         qos_res = self.qos_scheduler.process_step(qos_input, time_step_sec=1.0)
                         link_admitted = sum(qos_res[c]["offered_mb"] - qos_res[c]["dropped_mb"] for c in qos_res)
@@ -288,15 +362,14 @@ class TrafficSimulator:
                         queue_packets = int((tot_q / self.qos_scheduler.total_buffer_mb) * max_queue)
                         queue_delay = max(qos_res[c]["queue_delay_ms"] for c in qos_res)
                 else:
-                    # Uncontrolled standard FIFO Drop-Tail link behavior
+                    # Uncontrolled FIFO drop-tail
                     if link_offered <= cap:
                         link_admitted = link_offered
                         link_transmitted = link_offered
                         link_dropped = 0.0
-                        queue_packets = max(0, int(link.get("current_queue_packets", 0) * 0.4))
+                        queue_packets = max(0, int(link.get("current_queue_packets", 0) * 0.3))
                         queue_delay = (queue_packets / (cap / 8.0)) * 10.0 if cap > 0 else 0.0
                     else:
-                        # Excess arrivals queue up
                         excess = link_offered - cap
                         current_q = link.get("current_queue_packets", 0)
                         potential_q = current_q + int(excess * 5)
@@ -307,18 +380,16 @@ class TrafficSimulator:
                             queue_packets = potential_q
                         else:
                             queue_packets = max_queue
-                            overflow_packets = potential_q - max_queue
-                            link_dropped = (overflow_packets / 5.0)
+                            overflow = potential_q - max_queue
+                            link_dropped = (overflow / 5.0)
                             link_admitted = max(0.0, link_offered - link_dropped)
                             link_transmitted = cap
-                        queue_delay = (queue_packets / max_queue) * 65.0  # up to 65ms queuing delay
+                        queue_delay = (queue_packets / max_queue) * 70.0
 
-                # Utilization = transmitted throughput / link capacity
                 util_pct = min(100.0, (link_transmitted / cap) * 100.0) if cap > 0 else 0.0
                 q_occupancy = min(100.0, (queue_packets / max_queue) * 100.0) if max_queue > 0 else 0.0
                 latency_ms = prop_delay + queue_delay
 
-                # Update link object state
                 link["offered_mbps"] = round(link_offered, 2)
                 link["admitted_mbps"] = round(link_admitted, 2)
                 link["transmitted_mbps"] = round(link_transmitted, 2)
@@ -326,13 +397,38 @@ class TrafficSimulator:
                 link["utilization_pct"] = round(util_pct, 1)
                 link["current_queue_packets"] = queue_packets
                 link["queue_occupancy_pct"] = round(q_occupancy, 1)
-                link["packet_drops"] = int(link_dropped * 15)  # packet count representation
+                link["packet_drops"] = int(link_dropped * 15)
                 link["latency_ms"] = round(latency_ms, 2)
                 link["traffic_control_active"] = control_applied
 
-                # Evaluate congestion detector
+                # Congestion Detection evaluation
                 status, cause, changed, event = self.detector.evaluate_link(link)
                 link["status"] = status
+
+                # Check for Block Quota Breach
+                if lid in link_block_map:
+                    target_b = link_block_map[lid]
+                    b_conf = self.topology.block_configs.get(target_b, {})
+                    b_limit = b_conf.get("default_limit_mbps", 100.0)
+                    if link_transmitted >= b_limit:
+                        link["status"] = "critical"
+                        status = "critical"
+                        if not event:
+                            event = {
+                                "event_id": f"QUOTA_{target_b}_{int(time.time()*1000)}",
+                                "timestamp": datetime.now().isoformat(),
+                                "link_id": lid,
+                                "link_name": f"{b_conf.get('name', target_b)} Trunk Link",
+                                "severity": "critical",
+                                "utilization": round(util_pct, 1),
+                                "queue_occupancy": round(q_occupancy, 1),
+                                "packet_drops": int(link["packet_drops"]),
+                                "latency_ms": round(latency_ms, 1),
+                                "cause": f"Block Quota Limit Breached: {link_transmitted:.1f} Mbps >= Configured Allocation {b_limit:.1f} Mbps",
+                                "control_action": "Enforce Block Rate Limiting or Authorize Bandwidth Burst",
+                                "acknowledged": 0,
+                                "status": "active"
+                            }
 
                 if status == "critical":
                     congested_count += 1
@@ -344,7 +440,7 @@ class TrafficSimulator:
                 total_dropped += link_dropped
                 total_latency += latency_ms
 
-            # Aggregate network metrics
+            # Aggregates
             active_links_count = len(self.topology.links)
             overall_util = (total_transmitted / total_cap * 100.0) if total_cap > 0 else 0.0
             avg_lat = (total_latency / active_links_count) if active_links_count > 0 else 1.0
@@ -361,25 +457,25 @@ class TrafficSimulator:
                 "packet_loss_pct": round(loss_pct, 2),
                 "active_congested_links": congested_count,
                 "active_algorithm": self.active_control,
-                "profile": self.selected_profile
+                "profile": self.selected_profile,
+                "scenario": self.active_scenario
             }
 
             self.history_snapshots.append(snapshot)
             if len(self.history_snapshots) > self.max_snapshots:
                 self.history_snapshots.pop(0)
 
-            # Persist to SQLite periodically
             if self.step_number % 2 == 0:
                 database.save_metric_snapshot(snapshot)
 
             return snapshot
 
     def get_state(self):
-        """Returns comprehensive state for frontend dashboard."""
+        """Returns comprehensive state for VNR VJIET dashboard."""
         with self.lock:
             prof = self.PROFILES.get(self.selected_profile, self.PROFILES["normal_browsing"])
+            scenario_meta = CAMPUS_EVENT_SCENARIOS.get(self.active_scenario, CAMPUS_EVENT_SCENARIOS["normal_academic"])
             
-            # Protocol distribution data
             proto_dist = prof.get("protocol_dist", {"TCP": 0.7, "UDP": 0.2, "ICMP": 0.05, "OTHER": 0.05})
             latest_snap = self.history_snapshots[-1] if self.history_snapshots else {
                 "total_offered_mbps": 0.0,
@@ -400,14 +496,21 @@ class TrafficSimulator:
                     "mbps": round(latest_snap["total_transmitted_mbps"] * share, 2)
                 })
 
-            active_hosts_count = len([n for n in self.topology.nodes if n["type"] == "host"])
+            active_hosts_count = len([n for n in self.topology.nodes if n["type"] in ("host", "server")])
             total_cap = sum(link["capacity_mbps"] for link in self.topology.links)
+            blocks_summary = self.topology.get_blocks_summary()
+            device_counts = self.device_manager.get_counts()
+
+            # Count blocks in breach
+            breached_blocks_count = len([b for b in blocks_summary.values() if b["quota_status"] == "breached"])
 
             return {
                 "status": self.status,
                 "step_number": self.step_number,
                 "selected_profile": self.selected_profile,
                 "profile_details": prof,
+                "active_scenario": self.active_scenario,
+                "scenario_details": scenario_meta,
                 "custom_load_mbps": self.custom_load_mbps,
                 "boosted_link_id": self.boosted_link_id,
                 "boost_multiplier": self.boost_multiplier,
@@ -416,6 +519,9 @@ class TrafficSimulator:
                 "active_hosts_count": active_hosts_count,
                 "latest_metrics": latest_snap,
                 "protocol_distribution": proto_data,
+                "blocks_summary": blocks_summary,
+                "breached_blocks_count": breached_blocks_count,
+                "device_counts": device_counts,
                 "algorithm_stats": {
                     "leaky_bucket": self.leaky_bucket.get_stats(),
                     "token_bucket": self.token_bucket.get_stats(),
@@ -427,5 +533,5 @@ class TrafficSimulator:
                     "critical": self.detector.critical_threshold,
                     "persistence_window": self.detector.persistence_window
                 },
-                "environment_mode": "Simulated Academic Campus Environment (Deterministic Discrete Time Model)"
+                "environment_mode": "VNR VJIET Campus Network Model (Blocks A, B, C, D, E, PG, Wi-Fi)"
             }

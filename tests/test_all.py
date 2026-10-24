@@ -168,18 +168,18 @@ class TestTopologyAndSimulator(unittest.TestCase):
 
     def test_topology_capacity_update_and_validation(self):
         topo = CampusTopology()
-        ok, _ = topo.update_link_capacity("L_CORE_CSE", 150.0)
+        ok, _ = topo.update_link_capacity("L_CORE_BLKC", 250.0)
         self.assertTrue(ok)
-        self.assertEqual(topo.get_link("L_CORE_CSE")["capacity_mbps"], 150.0)
+        self.assertEqual(topo.get_link("L_CORE_BLKC")["capacity_mbps"], 250.0)
 
         # Boundary test: negative capacity
-        bad_ok, msg = topo.update_link_capacity("L_CORE_CSE", -10.0)
+        bad_ok, msg = topo.update_link_capacity("L_CORE_BLKC", -10.0)
         self.assertFalse(bad_ok)
 
     def test_topology_add_and_remove_host(self):
         topo = CampusTopology()
         init_nodes = len(topo.nodes)
-        ok, new_node = topo.add_host("Guest Laptop Lab", "SW_CSE")
+        ok, new_node = topo.add_host("Guest Laptop Lab", "SW_BLOCK_C")
         self.assertTrue(ok)
         self.assertEqual(len(topo.nodes), init_nodes + 1)
 
@@ -187,6 +187,62 @@ class TestTopologyAndSimulator(unittest.TestCase):
         rem_ok, _ = topo.remove_host(new_node["id"])
         self.assertTrue(rem_ok)
         self.assertEqual(len(topo.nodes), init_nodes)
+
+    def test_vnr_blocks_summary_and_quota_breach(self):
+        topo = CampusTopology()
+        summary = topo.get_blocks_summary()
+        self.assertIn("BLOCK_A", summary)
+        self.assertIn("BLOCK_C", summary)
+        self.assertIn("Examination Branch", summary["BLOCK_A"]["departments"])
+        
+        # Test updating block limit
+        ok, msg = topo.update_block_limit("BLOCK_C", 300.0)
+        self.assertTrue(ok)
+        self.assertEqual(topo.block_configs["BLOCK_C"]["default_limit_mbps"], 300.0)
+
+    def test_device_manager_nac_and_permissions(self):
+        sim = TrafficSimulator(random_seed=123)
+        dm = sim.device_manager
+        # Initial devices
+        devs = dm.list_devices()
+        self.assertGreaterEqual(len(devs), 3)
+
+        # Request new guest device
+        req_ok, _, new_dev = dm.request_access({
+            "mac_address": "AA:BB:CC:DD:EE:FF",
+            "device_name": "Hackathon External Laptop",
+            "device_type": "Guest Laptop",
+            "target_block": "BLOCK_C"
+        })
+        self.assertTrue(req_ok)
+        self.assertEqual(new_dev["status"], "pending_approval")
+
+        # Authorize device
+        auth_ok, _ = dm.authorize_device("AA:BB:CC:DD:EE:FF", status="guest_allowed", bandwidth_cap=20.0)
+        self.assertTrue(auth_ok)
+        dev = dm.get_device("AA:BB:CC:DD:EE:FF")
+        self.assertEqual(dev["status"], "guest_allowed")
+        self.assertEqual(dev["bandwidth_cap_mbps"], 20.0)
+
+        # Quarantine device
+        q_ok, _ = dm.quarantine_device("AA:BB:CC:DD:EE:FF", reason="Suspicious scan")
+        self.assertTrue(q_ok)
+        self.assertEqual(dm.get_device("AA:BB:CC:DD:EE:FF")["status"], "quarantined")
+
+    def test_campus_scenarios_switching(self):
+        sim = TrafficSimulator(random_seed=123)
+        self.assertEqual(sim.active_scenario, "normal_academic")
+
+        # Activate tech fest
+        ok, msg = sim.set_campus_scenario("tech_fest")
+        self.assertTrue(ok)
+        self.assertEqual(sim.active_scenario, "tech_fest")
+        self.assertIn("Annual Tech Fest", msg)
+
+        # Activate online exams
+        ok2, _ = sim.set_campus_scenario("online_exams")
+        self.assertTrue(ok2)
+        self.assertEqual(sim.active_scenario, "online_exams")
 
     def test_simulator_lifecycle(self):
         sim = TrafficSimulator(random_seed=123)
@@ -261,6 +317,45 @@ class TestFlaskAPI(unittest.TestCase):
         # Invalid: warning >= critical
         bad_res = self.client.post("/api/settings/thresholds", json={"warning": 90, "critical": 80})
         self.assertEqual(bad_res.status_code, 400)
+
+    def test_api_blocks(self):
+        res = self.client.get("/api/blocks")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("BLOCK_A", data)
+        self.assertIn("BLOCK_C", data)
+
+        # Update block limit
+        post_res = self.client.post("/api/blocks/limits", json={"block_id": "BLOCK_A", "limit_mbps": 180.0})
+        self.assertEqual(post_res.status_code, 200)
+        self.assertTrue(post_res.get_json()["success"])
+
+    def test_api_devices_and_authorization(self):
+        res = self.client.get("/api/devices")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("devices", res.get_json())
+        self.assertIn("counts", res.get_json())
+
+        # Authorize device
+        auth_res = self.client.post("/api/devices/authorize", json={
+            "mac_address": "DC:A6:32:7E:11:0B",
+            "status": "guest_allowed",
+            "bandwidth_cap_mbps": 15.0
+        })
+        self.assertEqual(auth_res.status_code, 200)
+        self.assertTrue(auth_res.get_json()["success"])
+
+    def test_api_scenarios(self):
+        res = self.client.get("/api/scenarios")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("tech_fest", data["scenarios"])
+        self.assertIn("online_exams", data["scenarios"])
+
+        # Activate scenario
+        act_res = self.client.post("/api/scenarios/activate", json={"scenario_id": "tech_fest"})
+        self.assertEqual(act_res.status_code, 200)
+        self.assertEqual(act_res.get_json()["active_scenario"], "tech_fest")
 
 
 if __name__ == "__main__":

@@ -10,7 +10,13 @@ import {
   ShieldCheck,
   CheckCircle2,
   Sliders,
-  Info
+  Info,
+  Building2,
+  Sparkles,
+  ArrowRight,
+  ShieldAlert,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import {
   AreaChart,
@@ -35,6 +41,12 @@ export default function OverviewDashboard({ dashboardData, onSelectTab }) {
   const protocols = dashboardData?.protocol_distribution || [];
   const recentAlerts = dashboardData?.recent_alerts || [];
   const activeControl = dashboardData?.active_control || 'none';
+  const blocks = dashboardData?.blocks_summary || {};
+  const blockList = Object.values(blocks);
+  const breachedCount = dashboardData?.breached_blocks_count || 0;
+  const deviceCounts = dashboardData?.device_counts || { total: 0, authorized: 0, guest_allowed: 0, pending_approval: 0, quarantined: 0 };
+  const scenarioMeta = dashboardData?.scenario_details || {};
+  const activeScenario = dashboardData?.active_scenario || 'normal_academic';
 
   // Format chart data
   const chartData = history.map((snap) => ({
@@ -125,6 +137,34 @@ export default function OverviewDashboard({ dashboardData, onSelectTab }) {
           <span className="font-semibold text-white">Simulated Campus Environment: </span>
           All data points, packet drops, delays, and queues reflect the local time-stepped network simulation engine built for the B.Tech Computer Networks Course Based Project. Real campus hardware is neither accessed nor altered.
         </div>
+      </div>
+
+      {/* Active Campus Event Scenario Banner */}
+      <div className="p-4 bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-cyan-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs uppercase font-bold tracking-wider text-cyan-400">Active Campus Scenario:</span>
+              <span className="text-sm font-bold text-white">{scenarioMeta.name || activeScenario}</span>
+              <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 text-[10px] font-semibold rounded-full border border-cyan-500/30">
+                Live State
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Guest Policy: <span className="text-slate-300 font-medium">{scenarioMeta.guest_policy || 'Standard Access Control'}</span>
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => onSelectTab('scenarios')}
+          className="self-start sm:self-auto flex items-center space-x-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-semibold transition"
+        >
+          <span>Switch Event Mode</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* KPI Cards Grid */}
@@ -246,6 +286,127 @@ export default function OverviewDashboard({ dashboardData, onSelectTab }) {
 
       </div>
 
+      {/* VNR VJIET Block & Department Bandwidth Quota Monitor */}
+      <div className="p-5 bg-slate-900/90 rounded-xl border border-slate-800 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Building2 className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-sm font-semibold text-white">VNR VJIET Block & Department Quota Health</h3>
+              {breachedCount > 0 ? (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">
+                  {breachedCount} Block Quota Breached
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  All Quotas Optimal
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Blocks A, B, C, D, E, PG & Wi-Fi Mesh real-time telemetry vs configured campus limits.
+            </p>
+          </div>
+          <button
+            onClick={() => onSelectTab('blocks')}
+            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition self-start sm:self-auto"
+          >
+            Manage Quota Limits &rarr;
+          </button>
+        </div>
+
+        {/* 7-Block Telemetry Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {blockList.map((block) => {
+            const isBreached = block.quota_status === 'breached';
+            const isWarning = block.quota_status === 'warning';
+            const barColor = isBreached ? 'bg-rose-500' : (isWarning ? 'bg-amber-500' : 'bg-emerald-500');
+            const badgeBg = isBreached
+              ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+              : (isWarning ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30');
+
+            return (
+              <div
+                key={block.block_id}
+                onClick={() => onSelectTab('blocks')}
+                className={`p-3.5 rounded-lg border cursor-pointer transition hover:border-slate-700 ${
+                  isBreached ? 'bg-rose-950/20 border-rose-500/30' : 'bg-slate-950/60 border-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-semibold text-xs text-slate-200 truncate pr-2" title={block.name}>
+                    {block.name.split(':')[0]}
+                  </span>
+                  <span className={`px-1.5 py-0.5 text-[9px] uppercase font-bold rounded border ${badgeBg}`}>
+                    {block.quota_status}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between text-xs mb-1.5 font-mono">
+                  <span className="text-slate-400">
+                    <strong className={isBreached ? 'text-rose-400' : 'text-slate-200'}>{block.current_load_mbps}</strong> / {block.bandwidth_limit_mbps} Mbps
+                  </span>
+                  <span className={`font-semibold ${isBreached ? 'text-rose-400' : 'text-slate-300'}`}>
+                    {block.utilization_pct}%
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className={`${barColor} h-full transition-all duration-300`}
+                    style={{ width: `${Math.min(100, block.utilization_pct)}%` }}
+                  />
+                </div>
+
+                <div className="text-[10px] text-slate-500 mt-2 truncate">
+                  {block.departments.slice(0, 2).join(', ')}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Network Access Control (NAC) & Device Permissions Banner */}
+      <div className="p-4 bg-slate-900/90 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-indigo-400">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">
+              Campus 802.1X NAC & Guest Device Access Control
+            </h4>
+            <div className="flex flex-wrap items-center gap-3 mt-1 text-xs">
+              <span className="text-slate-400">
+                Authorized Assets: <strong className="text-emerald-400">{deviceCounts.authorized}</strong>
+              </span>
+              <span className="text-slate-600">&bull;</span>
+              <span className="text-slate-400">
+                Guest Connections: <strong className="text-cyan-400">{deviceCounts.guest_allowed}</strong>
+              </span>
+              <span className="text-slate-600">&bull;</span>
+              <span className="text-slate-400">
+                Pending Requests: <strong className={deviceCounts.pending_approval > 0 ? 'text-amber-400 animate-pulse' : 'text-slate-400'}>{deviceCounts.pending_approval}</strong>
+              </span>
+              <span className="text-slate-600">&bull;</span>
+              <span className="text-slate-400">
+                Quarantined: <strong className={deviceCounts.quarantined > 0 ? 'text-rose-400' : 'text-slate-400'}>{deviceCounts.quarantined}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => onSelectTab('devices')}
+          className="self-start sm:self-auto flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold transition"
+        >
+          <span>Device Permissions</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* Bottom Section: Recent Congestion Alerts & Active Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -323,7 +484,7 @@ export default function OverviewDashboard({ dashboardData, onSelectTab }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Target Bottleneck:</span>
-                <span className="text-slate-300 font-mono">SW_CORE ↔ SW_CSE</span>
+                <span className="text-slate-300 font-mono">SW_CORE ↔ SW_BLOCK_C (CSE/IT)</span>
               </div>
             </div>
           </div>

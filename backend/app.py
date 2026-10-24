@@ -123,6 +123,141 @@ def reset_topology():
 
 
 # =========================================================================
+# 2B. VNR VJIET Block & Department Quota Management
+# =========================================================================
+@app.route("/api/blocks", methods=["GET"])
+def get_blocks():
+    """Returns block-by-block breakdown, allocated limits, and breach statuses."""
+    summary = simulator.topology.get_blocks_summary()
+    return jsonify(summary)
+
+
+@app.route("/api/blocks/limits", methods=["POST"])
+def update_block_limit():
+    """Configures bandwidth quota limit for a specific campus block."""
+    data = request.get_json(silent=True) or {}
+    block_id = data.get("block_id")
+    limit_mbps = data.get("limit_mbps")
+
+    if not block_id or limit_mbps is None:
+        return jsonify({"success": False, "error": "Missing block_id or limit_mbps"}), 400
+
+    success, msg = simulator.topology.update_block_limit(block_id, limit_mbps)
+    if success:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "blocks": simulator.topology.get_blocks_summary()
+        })
+    return jsonify({"success": False, "error": msg}), 400
+
+
+# =========================================================================
+# 2C. Network Access Control (NAC) & Device Permission Manager
+# =========================================================================
+@app.route("/api/devices", methods=["GET"])
+def get_devices():
+    """Returns list of campus devices with optional status and block filtering."""
+    status = request.args.get("status")
+    block = request.args.get("block")
+    devices = simulator.device_manager.list_devices(status=status, block=block)
+    counts = simulator.device_manager.get_counts()
+    return jsonify({"devices": devices, "counts": counts})
+
+
+@app.route("/api/devices/authorize", methods=["POST"])
+def authorize_device():
+    """Authorizes an unauthorized or guest device, granting dynamic bandwidth access."""
+    data = request.get_json(silent=True) or {}
+    mac = data.get("mac_address")
+    status = data.get("status", "guest_allowed")
+    bandwidth_cap = data.get("bandwidth_cap_mbps", 15.0)
+    note = data.get("notes", "")
+
+    if not mac:
+        return jsonify({"success": False, "error": "mac_address is required"}), 400
+
+    success, msg = simulator.device_manager.authorize_device(mac, status=status, bandwidth_cap=bandwidth_cap, note=note)
+    if success:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "counts": simulator.device_manager.get_counts()
+        })
+    return jsonify({"success": False, "error": msg}), 400
+
+
+@app.route("/api/devices/quarantine", methods=["POST"])
+def quarantine_device():
+    """Isolates an unauthorized device from sensitive campus subnets."""
+    data = request.get_json(silent=True) or {}
+    mac = data.get("mac_address")
+    reason = data.get("reason", "Unauthorized access attempt")
+
+    if not mac:
+        return jsonify({"success": False, "error": "mac_address is required"}), 400
+
+    success, msg = simulator.device_manager.quarantine_device(mac, reason=reason)
+    if success:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "counts": simulator.device_manager.get_counts()
+        })
+    return jsonify({"success": False, "error": msg}), 400
+
+
+@app.route("/api/devices/revoke", methods=["POST"])
+def revoke_device():
+    """Revokes access and removes device from access tables."""
+    data = request.get_json(silent=True) or {}
+    mac = data.get("mac_address")
+    if not mac:
+        return jsonify({"success": False, "error": "mac_address is required"}), 400
+
+    success, msg = simulator.device_manager.revoke_device(mac)
+    return jsonify({"success": success, "message": msg, "counts": simulator.device_manager.get_counts()})
+
+
+@app.route("/api/devices/request", methods=["POST"])
+def request_device_access():
+    """Simulates a new guest/visitor device seeking connection via captive portal."""
+    data = request.get_json(silent=True) or {}
+    success, msg, dev = simulator.device_manager.request_access(data)
+    return jsonify({"success": success, "message": msg, "device": dev})
+
+
+# =========================================================================
+# 2D. Campus Event Scenarios (Tech Fest, Online Exams, Induction, Normal)
+# =========================================================================
+@app.route("/api/scenarios", methods=["GET"])
+def get_scenarios():
+    """Returns list of campus event scenarios and active scenario."""
+    from backend.engine.campus_scenarios import CAMPUS_EVENT_SCENARIOS
+    return jsonify({
+        "active_scenario": simulator.active_scenario,
+        "scenarios": CAMPUS_EVENT_SCENARIOS
+    })
+
+
+@app.route("/api/scenarios/activate", methods=["POST"])
+def activate_scenario():
+    """Activates a campus scenario mode (e.g. tech_fest, online_exams)."""
+    data = request.get_json(silent=True) or {}
+    scenario_id = data.get("scenario_id", "normal_academic")
+    success, msg = simulator.set_campus_scenario(scenario_id)
+    if success:
+        return jsonify({
+            "success": True,
+            "message": msg,
+            "active_scenario": simulator.active_scenario,
+            "state": simulator.get_state()
+        })
+    return jsonify({"success": False, "error": msg}), 400
+
+
+
+# =========================================================================
 # 3. Simulation Lifecycle Endpoints
 # =========================================================================
 @app.route("/api/simulation/start", methods=["POST"])

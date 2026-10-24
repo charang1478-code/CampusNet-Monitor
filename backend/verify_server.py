@@ -73,6 +73,26 @@ def test_endpoints():
         assert r10.status_code == 200, f"HTML report export failed with {r10.status_code}"
         print("[PASS] CSV and HTML report exports check passed.")
 
+        # 9. Test VNR Blocks Endpoint
+        r11 = client.get('/api/blocks')
+        assert r11.status_code == 200, f"Blocks failed with {r11.status_code}"
+        d11 = r11.get_json()
+        assert "BLOCK_A" in d11
+        print("[PASS] VNR Blocks API check passed. Total blocks:", len(d11))
+
+        # 10. Test Devices NAC Endpoint
+        r12 = client.get('/api/devices')
+        assert r12.status_code == 200, f"Devices failed with {r12.status_code}"
+        d12 = r12.get_json()
+        print("[PASS] NAC Devices API check passed. Total devices:", len(d12.get("devices", [])))
+
+        # 11. Test Campus Scenarios Endpoint
+        r13 = client.get('/api/scenarios')
+        assert r13.status_code == 200, f"Scenarios failed with {r13.status_code}"
+        d13 = r13.get_json()
+        assert "tech_fest" in d13.get("scenarios", {})
+        print("[PASS] Campus Scenarios API check passed. Scenarios:", list(d13.get("scenarios", {}).keys()))
+
     print("\nALL BACKEND & FRONTEND INTEGRATION CHECKS PASSED SUCCESSFULLY!")
 
 if __name__ == '__main__':

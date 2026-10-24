@@ -211,6 +211,87 @@ export const api = {
     return res.json();
   },
 
+  // VNR VJIET Block & Department Quota Management
+  async getBlocks() {
+    const res = await fetch(`${API_BASE}/blocks`);
+    return res.json();
+  },
+
+  async updateBlockLimit(blockId, limitMbps) {
+    const res = await fetch(`${API_BASE}/blocks/limits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ block_id: blockId, limit_mbps: limitMbps })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update block limit');
+    }
+    return res.json();
+  },
+
+  // Network Access Control (NAC) & Device Permissions
+  async getDevices(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_BASE}/devices?${query}`);
+    return res.json();
+  },
+
+  async authorizeDevice(macAddress, status = 'guest_allowed', bandwidthCap = 15.0, notes = '') {
+    const res = await fetch(`${API_BASE}/devices/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mac_address: macAddress, status, bandwidth_cap_mbps: bandwidthCap, notes })
+    });
+    return res.json();
+  },
+
+  async quarantineDevice(macAddress, reason = 'Security policy violation') {
+    const res = await fetch(`${API_BASE}/devices/quarantine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mac_address: macAddress, reason })
+    });
+    return res.json();
+  },
+
+  async revokeDevice(macAddress) {
+    const res = await fetch(`${API_BASE}/devices/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mac_address: macAddress })
+    });
+    return res.json();
+  },
+
+  async requestDeviceAccess(deviceData) {
+    const res = await fetch(`${API_BASE}/devices/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(deviceData)
+    });
+    return res.json();
+  },
+
+  // Campus Event Scenarios (Tech Fest, Online Exams, Induction, Normal)
+  async getScenarios() {
+    const res = await fetch(`${API_BASE}/scenarios`);
+    return res.json();
+  },
+
+  async activateScenario(scenarioId) {
+    const res = await fetch(`${API_BASE}/scenarios/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario_id: scenarioId })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to activate scenario');
+    }
+    return res.json();
+  },
+
   // Export URLs
   getMetricsCsvUrl() {
     return `${API_BASE}/export/metrics/csv`;

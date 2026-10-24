@@ -167,7 +167,7 @@ export default function SettingsAbout({ onRefreshDashboard }) {
           <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
             <span className="font-bold text-indigo-400 block">Unit III: Logical Topologies, VLANs & Forwarding</span>
             <p className="text-slate-300">
-              Models department VLAN segmentation (VLAN 10 CSE, 20 ECE, 30 Admin, 40 Library, 50 Wi-Fi) interconnected via trunk switch interfaces and core gateway routing.
+              Models VNR VJIET campus block and department VLAN segmentation (VLAN 100 Block-A Admin/Exams, 200 Block-B EEE/AIML, 300 Block-C CSE/IT/Lib, 400 Block-D Mech/Civil, 500 Block-E H&S/Auditorium, 600 PG-Block M.Tech/R&D, 700 Wi-Fi Mesh) interconnected via 10G trunk switch interfaces and core gateway routing.
             </p>
           </div>
 

@@ -24,7 +24,7 @@ import { api } from '../services/api';
 export default function LiveMonitoring({ dashboardData, topologyData, onRefresh }) {
   const [selectedProfile, setSelectedProfile] = useState(dashboardData?.selected_profile || 'normal_browsing');
   const [customLoad, setCustomLoad] = useState(80);
-  const [boostLink, setBoostLink] = useState('L_CORE_CSE');
+  const [boostLink, setBoostLink] = useState('L_CORE_BLKC');
   const [boostMultiplier, setBoostMultiplier] = useState(2.5);
   const [isUpdating, setIsUpdating] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -191,11 +191,13 @@ export default function LiveMonitoring({ dashboardData, topologyData, onRefresh 
                   onChange={(e) => setBoostLink(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-white"
                 >
-                  <option value="L_CORE_CSE">Core Switch ↔ CSE Switch</option>
-                  <option value="L_CORE_ECE">Core Switch ↔ ECE Switch</option>
-                  <option value="L_CORE_ADM">Core Switch ↔ Admin Switch</option>
-                  <option value="L_CORE_LIB">Core Switch ↔ Library Switch</option>
-                  <option value="L_CORE_WIFI">Core Switch ↔ Wi-Fi AP</option>
+                  {links
+                    .filter((l) => l.id.startsWith('L_CORE_') || l.layer === 'distribution')
+                    .map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name} ({l.id})
+                      </option>
+                    ))}
                 </select>
               </div>
 

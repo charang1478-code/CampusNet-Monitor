@@ -1,10 +1,23 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Activity, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Activity, Sparkles } from 'lucide-react';
 
 export default function Navbar({ dashboardData, onSimulationAction }) {
   const status = dashboardData?.status || 'stopped';
-  const latest = dashboardData?.latest_metrics || {};
   const activeControl = dashboardData?.active_control || 'none';
+  const activeScenario = dashboardData?.active_scenario || 'normal_academic';
+
+  const getScenarioBadge = (sc) => {
+    switch (sc) {
+      case 'tech_fest':
+        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+      case 'online_exams':
+        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+      case 'induction_program':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      default:
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-slate-100">
@@ -18,21 +31,23 @@ export default function Navbar({ dashboardData, onSimulationAction }) {
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold text-lg tracking-tight text-white">CampusNet Monitor</span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                CN CBP
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                VNR VJIET
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block">
-              Campus Congestion Detection & Traffic Control • Simulated Environment
+              Blocks A–PG Network Congestion & Device Access Control Console
             </p>
           </div>
         </div>
 
-        {/* Center: Environment Mode Badge */}
-        <div className="hidden lg:flex items-center space-x-2 bg-slate-950/70 border border-slate-800 px-3 py-1 rounded-full text-xs">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span className="text-slate-400">Environment:</span>
-          <span className="font-medium text-cyan-300">Deterministic Campus Network Model</span>
+        {/* Center: Active Campus Event Scenario */}
+        <div className="hidden lg:flex items-center space-x-2 bg-slate-950/80 border border-slate-800 px-3.5 py-1.5 rounded-full text-xs">
+          <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
+          <span className="text-slate-400">Mode:</span>
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getScenarioBadge(activeScenario)}`}>
+            {activeScenario.replace('_', ' ')}
+          </span>
         </div>
 
         {/* Right Controls: Simulator Status & Actions */}
