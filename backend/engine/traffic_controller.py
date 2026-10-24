@@ -1,7 +1,7 @@
 """
 Traffic Control Engine
 Implements Leaky Bucket and Token Bucket traffic shaping and policing algorithms
-as taught in Computer Networks (Unit IV Congestion Control & QoS).
+for network traffic shaping, policing, and DiffServ QoS.
 """
 
 import time

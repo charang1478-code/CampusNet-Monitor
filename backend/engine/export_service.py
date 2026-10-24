@@ -258,7 +258,7 @@ def generate_html_report(experiment_data):
                     <th style="text-align:right;">Baseline (FIFO)</th>
                     <th style="text-align:right;">Controlled</th>
                     <th style="text-align:right;">Net Delta</th>
-                    <th style="text-align:center;">Academic Outcome</th>
+                    <th style="text-align:center;">Outcome</th>
                 </tr>
             </thead>
             <tbody>
@@ -266,16 +266,16 @@ def generate_html_report(experiment_data):
             </tbody>
         </table>
 
-        <h2>Analysis & Syllabus Mapping</h2>
+        <h2>Performance Analysis & Summary</h2>
         <div style="background:#0f172a; padding:16px; border-radius:8px; line-height:1.6; font-size:14px; color:#cbd5e1;">
             {exp.get('summary_notes')}
         </div>
 
         <div class="notice">
-            <strong>Academic Disclaimer & Limitations:</strong><br>
-            This experiment was executed within a simulated collegiate network model implementing queue-buffering,
-            Leaky Bucket traffic shaping, Token Bucket burst regulation, and QoS priority scheduling as per the B.Tech Computer Networks syllabus.
-            Values reflect discrete simulation counters and demonstrate network congestion dynamics without accessing real campus physical hardware.
+            <strong>System Notes:</strong><br>
+            This experiment was executed within the discrete event campus network engine implementing queue-buffering,
+            Leaky Bucket traffic shaping, Token Bucket burst regulation, and QoS priority scheduling.
+            Values reflect discrete simulation counters and demonstrate network congestion dynamics across campus links.
         </div>
     </div>
 </body>

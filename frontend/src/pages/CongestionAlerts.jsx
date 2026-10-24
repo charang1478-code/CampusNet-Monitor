@@ -101,7 +101,7 @@ export default function CongestionAlerts({ onRefreshDashboard }) {
       <div className="p-4 bg-slate-900/70 border border-slate-800 rounded-xl text-xs space-y-2 text-slate-300">
         <div className="flex items-center space-x-2 font-semibold text-cyan-400">
           <Info className="w-4 h-4" />
-          <span>Hysteresis Persistence Window & Multi-Metric Detection (Unit IV CN)</span>
+          <span>Hysteresis Persistence Window & Multi-Metric Detection</span>
         </div>
         <p className="text-slate-400 leading-relaxed">
           In real campus routers, momentary packet bursts causes utilization to briefly touch 75% or 85% without representing true congestion collapse. To avoid alert-state flapping and notification storms, this system enforces a configurable <strong>persistence window</strong> (default 2 consecutive intervals) before elevating or clearing alert levels. Furthermore, the engine distinguishes high utilization with clear buffers from confirmed buffer overflow (queue backlog + packet drops).

@@ -8,7 +8,6 @@ import {
   Cpu,
   Shield,
   Activity,
-  Layers,
   Server
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -138,48 +137,6 @@ export default function SettingsAbout({ onRefreshDashboard }) {
             {isSaving ? 'Updating Engine...' : 'Save Detection Thresholds'}
           </button>
         </form>
-      </div>
-
-      {/* Network Engine & System Architecture Specifications */}
-      <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-4 shadow-sm">
-        <div className="flex items-center space-x-2">
-          <Layers className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-sm font-semibold text-white">
-            Campus Network Engine Architecture
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          
-          <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-cyan-400 block">Hierarchical Infrastructure</span>
-            <p className="text-slate-300">
-              Campus 3-tier topology with central core routing, 10G optical backbone distribution, and isolated departmental access switches across Blocks A through PG and Wi-Fi Mesh.
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-cyan-400 block">Queue & Buffer Telemetry</span>
-            <p className="text-slate-300">
-              Monitors switch packet queues in real time, calculating dynamic queuing delay and tail-drop packet drops when offered traffic exceeds link capacities.
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-indigo-400 block">VLAN Segmentation & Quotas</span>
-            <p className="text-slate-300">
-              Departmental subnets isolated via 802.1Q trunks with configurable per-block bandwidth quota limits and instant breach alarm notifications.
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-indigo-400 block">Active Traffic Shaping & QoS</span>
-            <p className="text-slate-300">
-              Executable algorithms including Leaky Bucket traffic smoothing, Token Bucket burst regulation with shaping/policing, and DiffServ Strict Priority Queuing.
-            </p>
-          </div>
-
-        </div>
       </div>
 
       {/* System Specifications */}

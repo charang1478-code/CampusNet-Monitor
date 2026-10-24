@@ -206,17 +206,15 @@ Follow these 8 steps during an examination or course demonstration:
 
 ---
 
-## 7. Syllabus Mapping
+## 7. Network Architecture & Protocol Specifications
 
-| Syllabus Unit | Course Concept | CampusNet Monitor Implementation |
+| Layer / Subsystem | Network Protocol | CampusNet Monitor Implementation |
 |---|---|---|
-| **Unit I: Network Models & Architecture** | Topologies, LANs, Bandwidth, Propagation Delay | Hierarchical campus tree/star topology (`topology.py`) connecting Core, Distribution, and Access layers with configurable bandwidths (Mbps). |
-| **Unit II: Data Link & Queuing Foundations** | Frame/packet buffering, flow control, drop-tail queues | Time-stepped discrete buffer modeling with finite queue lengths (`max_queue_packets`) and queue occupancy percentages. |
-| **Unit III: Logical Addressing & VLANs** | Network layer forwarding, subnets, VLAN segmentation | VLAN 10 (CSE), VLAN 20 (ECE), VLAN 30 (Admin), VLAN 40 (Library), VLAN 50 (Wi-Fi) mapped through 802.1Q trunk switches. |
-| **Unit IV: Congestion Control & QoS** | Leaky Bucket, Token Bucket, DiffServ Priority Queuing | Complete mathematical Python implementations of Leaky Bucket smoothing, Token Bucket burst regulation, and Multi-Class Priority Queuing (`traffic_controller.py`, `qos_scheduler.py`). |
-| **Unit V: Application & Monitoring** | Protocol distribution, network traffic telemetry | Real-time monitoring of TCP/UDP/ICMP traffic shares, throughput time-series graphs, and CSV telemetry exports. |
-| **Lab Week 10: Wireshark Packet Analysis** | Protocol inspection and packet traffic counters | Transport protocol breakdown and throughput line charts mirroring Wireshark IO Graph functionality. |
-| **Lab Weeks 12–13: Cisco Packet Tracer** | Campus topology modeling and link stress testing | Programmatic software equivalent with live interactive link inspection and capacity modifications. |
+| **Topology & Backbone** | IEEE 802.3, 802.1Q | Hierarchical campus tree topology connecting Core, Block Distribution (A, B, C, D, E, PG, Wi-Fi), and Access layers. |
+| **Queuing & Buffer Telemetry** | FIFO Buffer Management | Time-stepped discrete buffer modeling with finite queue lengths (`max_queue_packets`) and queue occupancy percentages. |
+| **VLAN Segmentation** | 802.1Q Subnets & Trunks | Block A (VLAN 100), Block B (VLAN 200), Block C (VLAN 300), Block D (VLAN 400), Block E (VLAN 500), PG (VLAN 600), Wi-Fi (VLAN 700). |
+| **Traffic Control & Shaping** | Leaky & Token Bucket | Mathematical Python implementations of Leaky Bucket smoothing, Token Bucket burst regulation, and Multi-Class Priority Queuing. |
+| **Telemetry & Protocols** | TCP, UDP, ICMP | Real-time monitoring of TCP/UDP/ICMP traffic shares, throughput time-series graphs, and CSV telemetry exports. |
 
 ---
 
