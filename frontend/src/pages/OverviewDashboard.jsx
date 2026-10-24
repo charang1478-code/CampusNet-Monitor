@@ -130,13 +130,13 @@ export default function OverviewDashboard({ dashboardData, onSelectTab }) {
   return (
     <div className="space-y-6">
       
-      {/* Academic Simulation Notice */}
-      <div className="p-3.5 bg-blue-950/40 border border-blue-500/30 rounded-xl flex items-start space-x-3 text-xs text-blue-200">
-        <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-white">Simulated Campus Environment: </span>
-          All data points, packet drops, delays, and queues reflect the local time-stepped network simulation engine built for the B.Tech Computer Networks Course Based Project. Real campus hardware is neither accessed nor altered.
+      {/* Environment Status Strip */}
+      <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between text-xs text-slate-300">
+        <div className="flex items-center space-x-2.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="font-medium text-slate-200">VNR VJIET Network Simulation & Traffic Telemetry Engine Active</span>
         </div>
+        <span className="text-[11px] text-slate-500 font-mono">1000ms Ticks &bull; Discrete Event Queue</span>
       </div>
 
       {/* Active Campus Event Scenario Banner */}

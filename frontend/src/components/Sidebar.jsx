@@ -31,7 +31,7 @@ export default function Sidebar({
     { id: 'control', label: 'Traffic Control (QoS)', icon: Sliders },
     { id: 'comparison', label: 'Performance Comparison', icon: GitCompare },
     { id: 'history', label: 'Experiment History', icon: History },
-    { id: 'settings', label: 'Settings & Syllabus', icon: Settings },
+    { id: 'settings', label: 'System Settings', icon: Settings },
   ];
 
   return (
@@ -80,8 +80,8 @@ export default function Sidebar({
           <span className="text-slate-300 font-medium">VNR VJIET (A–PG)</span>
         </div>
         <div className="flex justify-between">
-          <span>Course:</span>
-          <span className="text-slate-400 font-medium">B.Tech III Sem CN</span>
+          <span>Network NOC:</span>
+          <span className="text-emerald-400 font-medium">Active & Live</span>
         </div>
         <div className="flex justify-between">
           <span>Engine:</span>

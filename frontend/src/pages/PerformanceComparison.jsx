@@ -332,11 +332,11 @@ export default function PerformanceComparison({ onRefreshDashboard }) {
             </div>
           </div>
 
-          {/* Academic Discussion Note */}
+          {/* Discussion Note */}
           <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-1.5 text-slate-300">
             <span className="font-semibold text-cyan-400 flex items-center space-x-1.5">
               <Info className="w-4 h-4" />
-              <span>Experiment Observations & Course Interpretation:</span>
+              <span>Performance Observations & Analysis:</span>
             </span>
             <p className="text-slate-400 leading-relaxed">
               {experimentResult.summary_notes}

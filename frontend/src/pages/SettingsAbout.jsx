@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Settings,
-  BookOpen,
   Sliders,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
   Cpu,
   Shield,
-  GraduationCap
+  Activity,
+  Layers,
+  Server
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -53,10 +54,10 @@ export default function SettingsAbout({ onRefreshDashboard }) {
       <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
         <h2 className="text-base font-bold text-white flex items-center space-x-2">
           <Settings className="w-5 h-5 text-cyan-400" />
-          <span>Congestion Detection Settings & Syllabus Mapping</span>
+          <span>Congestion Detection & System Settings</span>
         </h2>
         <p className="text-xs text-slate-400 mt-0.5">
-          Fine-tune multi-metric thresholds, review theoretical syllabus mapping, and check lab alignment.
+          Fine-tune multi-metric thresholds, hysteresis persistence windows, and campus telemetry engine parameters.
         </p>
       </div>
 
@@ -139,64 +140,56 @@ export default function SettingsAbout({ onRefreshDashboard }) {
         </form>
       </div>
 
-      {/* Complete Syllabus Mapping (Academic Documentation) */}
+      {/* Network Engine & System Architecture Specifications */}
       <div className="p-5 bg-slate-900/90 border border-slate-800 rounded-xl space-y-4 shadow-sm">
         <div className="flex items-center space-x-2">
-          <GraduationCap className="w-5 h-5 text-indigo-400" />
+          <Layers className="w-5 h-5 text-cyan-400" />
           <h3 className="text-sm font-semibold text-white">
-            B.Tech Computer Networks Syllabus Alignment
+            Campus Network Engine Architecture
           </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           
           <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-cyan-400 block">Unit I: Network Architecture & Physical/Data Link Layers</span>
+            <span className="font-bold text-cyan-400 block">Hierarchical Infrastructure</span>
             <p className="text-slate-300">
-              Demonstrates hierarchical tree/star campus topologies, transmission bandwidth capacities (Mbps), propagation delays, and network boundary aggregation.
+              Campus 3-tier topology with central core routing, 10G optical backbone distribution, and isolated departmental access switches across Blocks A through PG and Wi-Fi Mesh.
             </p>
           </div>
 
           <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-cyan-400 block">Unit II: Queues, Buffer Management & Flow Control</span>
+            <span className="font-bold text-cyan-400 block">Queue & Buffer Telemetry</span>
             <p className="text-slate-300">
-              Models packet buffers at intermediate switches, finite queue lengths, tail-drop overflow mechanisms, and queue occupancy calculations.
+              Monitors switch packet queues in real time, calculating dynamic queuing delay and tail-drop packet drops when offered traffic exceeds link capacities.
             </p>
           </div>
 
           <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-indigo-400 block">Unit III: Logical Topologies, VLANs & Forwarding</span>
+            <span className="font-bold text-indigo-400 block">VLAN Segmentation & Quotas</span>
             <p className="text-slate-300">
-              Models VNR VJIET campus block and department VLAN segmentation (VLAN 100 Block-A Admin/Exams, 200 Block-B EEE/AIML, 300 Block-C CSE/IT/Lib, 400 Block-D Mech/Civil, 500 Block-E H&S/Auditorium, 600 PG-Block M.Tech/R&D, 700 Wi-Fi Mesh) interconnected via 10G trunk switch interfaces and core gateway routing.
+              Departmental subnets isolated via 802.1Q trunks with configurable per-block bandwidth quota limits and instant breach alarm notifications.
             </p>
           </div>
 
           <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-            <span className="font-bold text-indigo-400 block">Unit IV: Congestion Control, Leaky/Token Bucket & QoS</span>
+            <span className="font-bold text-indigo-400 block">Active Traffic Shaping & QoS</span>
             <p className="text-slate-300">
-              Direct implementation of Leaky Bucket traffic smoothing, Token Bucket burst regulation with shaping/policing, and DiffServ Quality of Service (FIFO vs Strict Priority Queuing).
-            </p>
-          </div>
-
-          <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1 md:col-span-2">
-            <span className="font-bold text-emerald-400 block">Computer Networks Lab Integration (Week 10 & Weeks 12-13)</span>
-            <p className="text-slate-300 leading-relaxed">
-              <strong>Week 10 (Wireshark Packet Analysis):</strong> Mirrors Wireshark protocol distribution counters (TCP, UDP, ICMP packet breakdown) and throughput time-series graphs.<br />
-              <strong>Weeks 12-13 (Cisco Packet Tracer Simulation):</strong> Serves as an interactive, programmatically verifiable software equivalent of router/switch campus topology models.
+              Executable algorithms including Leaky Bucket traffic smoothing, Token Bucket burst regulation with shaping/policing, and DiffServ Strict Priority Queuing.
             </p>
           </div>
 
         </div>
       </div>
 
-      {/* Project Metadata & Academic Disclaimer */}
+      {/* System Specifications */}
       <div className="p-5 bg-slate-900/50 border border-slate-800 rounded-xl text-xs space-y-2 text-slate-400">
-        <h4 className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">Academic Project Information</h4>
+        <h4 className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">System Specifications</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-          <div>Project Title: <span className="text-white">Campus Network Congestion Detection and Traffic Control System</span></div>
-          <div>Course: <span className="text-white">B.Tech III Semester Computer Networks Course Based Project (CBP)</span></div>
-          <div>Architecture: <span className="text-white">React 19 + Vite + Tailwind CSS + Flask + SQLite3</span></div>
-          <div>Execution Mode: <span className="text-white">Local Standalone Prototype (No physical campus hardware altered)</span></div>
+          <div>System Name: <span className="text-white">CampusNet Monitor</span></div>
+          <div>Target Campus: <span className="text-white">VNR VJIET (Blocks A, B, C, D, E, PG, Wi-Fi)</span></div>
+          <div>Stack: <span className="text-white">React 19 + Tailwind CSS + Flask + SQLite3</span></div>
+          <div>Simulation Interval: <span className="text-white">1000 ms Discrete Ticks</span></div>
         </div>
       </div>
 

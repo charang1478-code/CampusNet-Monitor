@@ -94,7 +94,7 @@ export default function TrafficControl({ dashboardData, onRefresh }) {
             <span>Traffic Control & QoS Scheduling Engine</span>
           </h2>
           <p className="text-xs text-slate-400">
-            Executable Python implementation of Leaky Bucket, Token Bucket, and Strict Priority Queuing (Unit IV CN).
+            Executable Python implementation of Leaky Bucket, Token Bucket, and Strict Priority Queuing (DiffServ QoS).
           </p>
         </div>
 

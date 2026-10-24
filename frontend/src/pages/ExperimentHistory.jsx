@@ -50,7 +50,7 @@ export default function ExperimentHistory() {
             <span>SQLite Experiment Run History</span>
           </h2>
           <p className="text-xs text-slate-400">
-            Persistent archive of completed baseline-vs-controlled academic benchmarks.
+            Persistent archive of completed baseline-vs-controlled benchmark runs.
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export default function ExperimentHistory() {
                     </div>
 
                     <div className="p-3 bg-slate-900 rounded border border-slate-800 text-slate-300">
-                      <span className="font-semibold text-slate-400 block mb-1">Academic Notes:</span>
+                      <span className="font-semibold text-slate-400 block mb-1">Experiment Notes:</span>
                       {exp.summary_notes}
                     </div>
                   </div>
